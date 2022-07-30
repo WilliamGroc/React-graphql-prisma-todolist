@@ -1,47 +1,31 @@
-import { todos } from "../data/mock";
-
-type Todo = {
-  id: string,
-  title: string,
-  done: boolean,
-  description: string,
-  createdAt: string
-}
+import { PrismaClient, Todo } from "@prisma/client";
+import { container } from "tsyringe";
+import { TodoService } from "../service/todo.service";
 
 type Input = {
   input: Todo
 }
 
-export const todoResolver = {
-  Query: {
-    getTodos: () => todos
-  },
-  Mutation: {
-    addTodo: (_: any, { input }: Input) => {
-      const todo = { ...input, id: Math.random().toString(), createdAt: Date(), done: false }
-      console.log(input)
-      todos.push(todo);
-      return { todo }
-    },
-    doneTodo: (_: any, { input }: Input) => {
-      const todo = todos.find(item => item.id === input.id)
+export const todoResolver = () => {
+  const todoService = container.resolve(TodoService)
 
-      if (todo) {
-        todo.done = true;
+  return {
+    Query: {
+      getTodos: () => todoService.getTodos()
+    },
+    Mutation: {
+      addTodo: async (_: any, { input }: Input) => {
+        const todo = await todoService.addTodo(input)
         return { todo }
-      }
-      throw new Error('Todo don\'t exist')
-    },
-    updateTodo: (_: any, { input }: Input) => {
-      const todo = todos.find(item => item.id === input.id);
-
-      if (todo) {
-        todo.title = input.title;
-        todo.description = input.description;
+      },
+      doneTodo: async (_: any, { input }: Input) => {
+        const todo = await todoService.doneTodo(input)
         return { todo }
-      }
-
-      throw new Error('Todo don\'t exist')
-    },
+      },
+      updateTodo: async (_: any, { input }: Input) => {
+        const todo = await todoService.updateTodo(input)
+        return { todo }
+      },
+    }
   }
 }
